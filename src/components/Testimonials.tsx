@@ -2,28 +2,28 @@
 
 import { motion, Variants } from 'framer-motion'
 import { Linkedin } from 'lucide-react'
-import Image from 'next/image'
+// import Image from 'next/image'
 
 const testimonials = [
   {
     quote: "CapprossBins team listens to their users and build what they need. Thanks for solving a big pain point.",
     name: "Sarah Chen",
     title: "Head of Risk, FinTech Innovations (Series B)",
-    image: "/api/placeholder/80/80",
+    // image: "/api/placeholder/80/80",
     linkedIn: "#"
   },
   {
     quote: "Love that CapprossBins is an Open Source! Very glad we switched and using it for our credit scoring models.",
     name: "Michael Rodriguez",
     title: "Risk Analytics Manager, Digital Bank Corp",
-    image: "/api/placeholder/80/80", 
+    // image: "/api/placeholder/80/80", 
     linkedIn: "#"
   },
   {
     quote: "Our transition to CapprossBins was smooth. We love the platform and data rooms with custom domains.",
     name: "Jennifer Park",
     title: "VP Risk Management, Credit Union Alliance",
-    image: "/api/placeholder/80/80",
+    // image: "/api/placeholder/80/80",
     linkedIn: "#"
   }
 ]
@@ -54,11 +54,11 @@ interface TestimonialCardProps {
   quote: string
   name: string
   title: string
-  image: string
+  // image: string
   linkedIn: string
 }
 
-const TestimonialCard = ({ quote, name, title, image, linkedIn }: TestimonialCardProps) => {
+const TestimonialCard = ({ quote, name, title, /* image, */ linkedIn }: TestimonialCardProps) => {
   return (
     <motion.div
       variants={itemVariants}
@@ -127,7 +127,7 @@ export default function Testimonials() {
               quote={testimonial.quote}
               name={testimonial.name}
               title={testimonial.title}
-              image={testimonial.image}
+              // image={testimonial.image}
               linkedIn={testimonial.linkedIn}
             />
           ))}

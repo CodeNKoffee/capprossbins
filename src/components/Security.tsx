@@ -1,7 +1,7 @@
 'use client'
 
 import { motion, Variants } from 'framer-motion'
-import { Shield, Lock, Database, Key, UserCheck, Server, LucideIcon } from 'lucide-react'
+import { Shield, Lock, /* Database, Key, */ UserCheck, Server, LucideIcon } from 'lucide-react'
 
 const securityFeatures = [
   {
