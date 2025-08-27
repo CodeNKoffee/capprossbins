@@ -7,14 +7,14 @@ const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   
-  const navLinks = [
-    { name: 'Why CapprossBins?', href: '#', hasDropdown: true },
-    { name: 'Analytics', href: '#analytics' },
+  // const navLinks = [
+    // { name: 'Why CapprossBins?', href: '#', hasDropdown: true },
+    // { name: 'Analytics', href: '/#analytics' },
     // { name: 'Pricing', href: '/pricing' },
     // { name: 'Enterprise', href: '#' },
     // { name: 'Blog', href: '/blog' },
-    { name: 'Customers', href: '#customers' },
-  ]
+    // { name: 'Customers', href: '/#customers' },
+  // ]
 
   // Comparison data for the dropdown
   const comparisons = [
@@ -107,7 +107,7 @@ const Header = () => {
 
             {/* Desktop Navigation */}
             <nav className="hidden md:flex space-x-8">
-              {navLinks.map((navLink) => (
+              {/* {navLinks.map((navLink) => (
                 <div 
                   key={navLink.name} 
                   className="relative"
@@ -134,7 +134,7 @@ const Header = () => {
                     )}
                   </motion.a>
                 </div>
-              ))}
+              ))} */}
             </nav>
 
             {/* Desktop Actions */}
@@ -143,7 +143,7 @@ const Header = () => {
                 <option>EN</option>
               </select>
               <motion.a
-                href="#early-access"
+                href="/#early-access"
                 whileHover={{ scale: 1.05, backgroundColor: '#1f2937' }}
                 className="bg-black text-white ml-2 px-4 py-2 rounded-lg transition-colors"
               >
@@ -322,7 +322,7 @@ const Header = () => {
               {/* Menu Content */}
               <div className="pt-20 pb-8 px-0 h-full flex flex-col">
                 {/* Navigation Links */}
-                <nav className="flex-1 flex flex-col">
+                {/* <nav className="flex-1 flex flex-col">
                   {navLinks.map((navLink, index) => (
                     <motion.a
                       key={navLink.name}
@@ -347,10 +347,10 @@ const Header = () => {
                   >
                     Log in
                   </motion.a>
-                </nav>
+                </nav> */}
 
                 {/* CTA Button at bottom */}
-                <div className="px-6 pb-8">
+                {/* <div className="px-6 pb-8">
                   <motion.a
                     href="/signup"
                     onClick={handleLinkClick}
@@ -363,7 +363,7 @@ const Header = () => {
                   >
                     Start now
                   </motion.a>
-                </div>
+                </div> */}
               </div>
             </motion.div>
           </>

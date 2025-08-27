@@ -54,7 +54,7 @@ const Hero = () => {
             className="mt-10"
           >
             <motion.a
-              href='#early-access'
+              href='/#early-access'
               whileHover={{ scale: 1.05, backgroundColor: '#1f2937' }}
               whileTap={{ scale: 0.95 }}
               className="bg-black text-white px-8 py-4 rounded-lg text-lg font-medium transition-colors"
