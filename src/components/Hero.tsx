@@ -47,7 +47,7 @@ const Hero = () => {
             className="mt-8 space-y-4"
           >
             <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              Your binning engine for transparent, intelligent credit scoring.<br />Built for clarity. Powered by binning. Trusted in credit scoring
+              Your binning engine for transparent, intelligent credit scoring.<br />Built for clarity. Powered by binning. Trusted in credit scoring.
             </p>
           </motion.div>
 
