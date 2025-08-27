@@ -3,8 +3,8 @@
 import { motion, Variants } from 'framer-motion'
 import { Formik, Form, Field, ErrorMessage, FormikHelpers } from 'formik'
 import * as Yup from 'yup'
-import { useState, useCallback, useEffect } from 'react'
-import { useForm, ValidationError } from '@formspree/react'
+import { useState, useCallback } from 'react'
+// import { useForm, ValidationError, SubmissionError } from '@formspree/react'
 
 // Types
 interface FormValues {
@@ -60,28 +60,10 @@ const animationConfig: AnimationConfig = {
 }
 
 const CTASection: React.FC = () => {
-  const [state, handleSubmit] = useForm(FORMSPREE_FORM_ID)
+  // Remove the Formspree hook since we're handling submission manually
   const [submitStatus, setSubmitStatus] = useState<SubmitStatus>({ type: null })
 
-  // Handle form submission status
-  useEffect(() => {
-    if (state.succeeded) {
-      setSubmitStatus({ 
-        type: 'success', 
-        message: 'Successfully joined the waitlist!' 
-      })
-      setTimeout(() => setSubmitStatus({ type: null }), SUCCESS_MESSAGE_DURATION_MS)
-    }
-    
-    // Fixed: Check if errors exist properly
-    if (state.errors && Array.isArray(state.errors) && state.errors.length > 0) {
-      setSubmitStatus({ 
-        type: 'error', 
-        message: 'Something went wrong. Please try again.' 
-      })
-      setTimeout(() => setSubmitStatus({ type: null }), ERROR_MESSAGE_DURATION_MS)
-    }
-  }, [state.succeeded, state.errors])
+  // Remove the useEffect since we're handling status in onSubmit
 
   const renderStatusMessage = useCallback(() => {
     if (!submitStatus.type) return null
@@ -163,18 +145,39 @@ const CTASection: React.FC = () => {
             <Formik<FormValues>
               initialValues={{ email: '' }}
               validationSchema={subscriptionSchema}
-              onSubmit={(values: FormValues, helpers: FormikHelpers<FormValues>) => {
-                // Fixed: Proper typing instead of any
-                const formEvent = new Event('submit') as unknown as React.FormEvent<HTMLFormElement>
-                Object.defineProperty(formEvent, 'target', {
-                  value: {
-                    email: { value: values.email }
-                  },
-                  enumerable: true
-                })
-                
-                handleSubmit(formEvent)
-                helpers.setSubmitting(false)
+              onSubmit={async (values: FormValues, helpers: FormikHelpers<FormValues>) => {
+                try {
+                  // Create a proper FormData object for Formspree
+                  const formData = new FormData()
+                  formData.append('email', values.email)
+                  
+                  const response = await fetch(`https://formspree.io/f/${FORMSPREE_FORM_ID}`, {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                      'Accept': 'application/json'
+                    }
+                  })
+                  
+                  if (response.ok) {
+                    setSubmitStatus({ 
+                      type: 'success', 
+                      message: 'Successfully joined the waitlist!' 
+                    })
+                    helpers.resetForm()
+                    setTimeout(() => setSubmitStatus({ type: null }), SUCCESS_MESSAGE_DURATION_MS)
+                  } else {
+                    throw new Error('Submission failed')
+                  }
+                } catch (error) {
+                  setSubmitStatus({ 
+                    type: 'error', 
+                    message: 'Something went wrong. Please try again.' 
+                  })
+                  setTimeout(() => setSubmitStatus({ type: null }), ERROR_MESSAGE_DURATION_MS)
+                } finally {
+                  helpers.setSubmitting(false)
+                }
               }}
               validateOnChange={true}
               validateOnBlur={true}
@@ -203,29 +206,24 @@ const CTASection: React.FC = () => {
                         className="text-red-200 text-sm mt-2 text-center"
                         aria-live="polite"
                       />
-                      <ValidationError 
-                        prefix="Email" 
-                        field="email"
-                        errors={state.errors}
-                        className="text-red-200 text-sm mt-2 text-center"
-                      />
+                      {/* Remove ValidationError since we're not using Formspree hook */}
                     </div>
                     <motion.button
                       type="submit"
-                      disabled={isSubmitting || !values.email || state.submitting}
+                      disabled={isSubmitting || !values.email}
                       whileHover={!isSubmitting ? { 
                         scale: 1.05, 
                         backgroundColor: '#f3f4f6' 
                       } : {}}
                       whileTap={!isSubmitting ? { scale: 0.95 } : {}}
                       className={`w-full sm:w-fit px-8 py-4 bg-white text-emerald-700 font-semibold rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-emerald-300 focus:ring-offset-2 focus:ring-offset-emerald-700 ${
-                        isSubmitting || !values.email || state.submitting
+                        isSubmitting || !values.email
                           ? 'opacity-75 cursor-not-allowed hover:bg-white' 
                           : 'hover:bg-gray-50'
                       }`}
                       aria-label={isSubmitting ? 'Joining waitlist...' : 'Join the waitlist'}
                     >
-                      {isSubmitting || state.submitting ? (
+                      {isSubmitting ? (
                         <span className="flex items-center">
                           <svg className="animate-spin -ml-1 mr-2 h-4 w-4" fill="none" viewBox="0 0 24 24">
                             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
