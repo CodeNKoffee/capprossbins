@@ -312,9 +312,8 @@ const CTASection: React.FC = () => {
               {({ isSubmitting, errors, touched, values }) => (
                 <Form 
                   name={FORM_NAME}
+                  action="https://formspree.io/f/xldwdjna"
                   method="POST"
-                  data-netlify="true"
-                  data-netlify-honeypot="bot-field"
                 >
                   {/* Netlify Form Attributes */}
                   <input type="hidden" name="form-name" value={FORM_NAME} />
