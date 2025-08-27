@@ -9,7 +9,11 @@ const Hero = () => {
   const [currentLogo, setCurrentLogo] = useState(0)
   // Financial institutions that would use credit scoring and binning
   const logos = [
-    { name: 'Tawabiry', image: tawabiry },
+    { 
+      name: 'Tawabiry', 
+      image: tawabiry,
+      url: 'https://tawabiry.com' 
+    },
     // { name: 'JPMorgan', image: null },
     // { name: 'Citi', image: null },
   ]
@@ -83,7 +87,14 @@ const Hero = () => {
                   className="flex flex-col items-center text-2xl font-semibold text-gray-600"
                 >
                   {logo.image ? (
-                    <Image src={logo.image} alt={logo.name} className="h-8 mb-1" width={104} height={224} />
+                    <a 
+                      href={logo.url} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="cursor-pointer transition-opacity hover:opacity-80"
+                    >
+                      <Image src={logo.image} alt={logo.name} className="h-8 mb-1" width={104} height={224} />
+                    </a>
                   ) : (
                     <span>{logo.name}</span>
                   )}

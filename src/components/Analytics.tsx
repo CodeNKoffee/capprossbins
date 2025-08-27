@@ -110,27 +110,29 @@ const Analytics = () => {
                 {/* Stats */}
                 {/* Table Screenshot */}
                 <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-                  <Image
-                    src="/assets/images/bin-stats.jpeg"
-                    alt="Bin Stats Screenshot"
-                    className="w-full !h-48 object-cover rounded"
-                    width={48}
-                    height={48}
-                  />
-                {/* <div className="grid grid-cols-3 gap-4">
-                  <div>
-                    <div className="text-2xl font-bold">2.4K</div>
-                    <div className="text-xs text-gray-600">Models Scored</div>
+                  <div className="relative w-full h-48"> {/* Added container with relative positioning */}
+                    <Image
+                      src="/assets/images/bin-stats.jpeg"
+                      alt="Bin Stats Screenshot"
+                      fill // Use fill instead of width/height
+                      className="object-cover rounded" // Removed w-full and !h-48
+                    />
                   </div>
-                  <div>
-                    <div className="text-2xl font-bold">0</div>
-                    <div className="text-xs text-gray-600">Alerts</div>
-                  </div>
-                  <div>
-                    <div className="text-2xl font-bold">94</div>
-                    <div className="text-xs text-gray-600">Accuracy %</div>
-                  </div> */}
+                  {/* <div className="grid grid-cols-3 gap-4">
+    <div>
+      <div className="text-2xl font-bold">2.4K</div>
+      <div className="text-xs text-gray-600">Models Scored</div>
+    </div>
+    <div>
+      <div className="text-2xl font-bold">0</div>
+      <div className="text-xs text-gray-600">Alerts</div>
+    </div>
+    <div>
+      <div className="text-2xl font-bold">94</div>
+      <div className="text-xs text-gray-600">Accuracy %</div>
+    </div> */}
                 </div>
+
               </div>
             </div>
           </motion.div>
