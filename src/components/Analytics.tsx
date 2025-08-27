@@ -1,7 +1,7 @@
 'use client'
 
 import { motion } from 'framer-motion'
-import Link from 'next/link'
+import Image from 'next/image'
 import { useState, useEffect } from 'react'
 
 const Analytics = () => {
@@ -78,7 +78,7 @@ const Analytics = () => {
                 {/* Chart */}
                 <div className="mb-6">
                   <div className="flex justify-between items-center mb-4">
-                    <span className="text-sm font-medium">Risk Score Distribution</span>
+                    <span className="text-sm font-medium">Risk Binning Distribution</span>
                     <div className="flex items-center space-x-4">
                       <div className="flex items-center space-x-1">
                         <div className="w-3 h-3 bg-emerald-500 rounded-full"></div>
@@ -101,13 +101,22 @@ const Analytics = () => {
                       />
                     ))}
                   </div>
-                  <div className="flex justify-between text-xs text-gray-500 mt-2">
+                  {/* <div className="flex justify-between text-xs text-gray-500 mt-2">
                     <span>Low Risk</span>
                     <span>High Risk</span>
-                  </div>
+                  </div> */}
                 </div>
 
                 {/* Stats */}
+                {/* Table Screenshot */}
+                <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                  <Image
+                    src="/assets/images/bin-stats.jpeg"
+                    alt="Bin Stats Screenshot"
+                    className="w-full !h-48 object-cover rounded"
+                    width={48}
+                    height={48}
+                  />
                 {/* <div className="grid grid-cols-3 gap-4">
                   <div>
                     <div className="text-2xl font-bold">2.4K</div>
@@ -120,8 +129,8 @@ const Analytics = () => {
                   <div>
                     <div className="text-2xl font-bold">94</div>
                     <div className="text-xs text-gray-600">Accuracy %</div>
-                  </div>
-                </div> */}
+                  </div> */}
+                </div>
               </div>
             </div>
           </motion.div>
@@ -140,7 +149,7 @@ const Analytics = () => {
               </h2>
               <p className="text-lg text-gray-600">
                 Advanced machine learning algorithms for precise credit scoring.
-                Your comprehensive alternative to traditional risk models. AI-Powered.
+                Your comprehensive alternative to traditional risk models.
               </p>
             </div>
 

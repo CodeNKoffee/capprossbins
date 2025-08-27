@@ -297,8 +297,7 @@ const CTASection: React.FC = () => {
           </h2>
           
           <p className="text-emerald-100 text-lg md:text-xl mb-10 max-w-3xl mx-auto">
-            Join thousands of financial institutions using CapprossBins for advanced risk assessment.
-            Start building better credit models today.
+            Start building better feature binning today.
           </p>
           
           {/* Enhanced Email Form */}
