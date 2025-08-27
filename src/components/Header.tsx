@@ -143,7 +143,7 @@ const Header = () => {
                 <option>EN</option>
               </select>
               <motion.a
-                href="/signup"
+                href="#early-access"
                 whileHover={{ scale: 1.05, backgroundColor: '#1f2937' }}
                 className="bg-black text-white ml-2 px-4 py-2 rounded-lg transition-colors"
               >

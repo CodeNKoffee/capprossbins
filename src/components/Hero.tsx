@@ -53,13 +53,14 @@ const Hero = () => {
             transition={{ duration: 0.8, delay: 0.6 }}
             className="mt-10"
           >
-            <motion.button
+            <motion.a
+              href='#early-access'
               whileHover={{ scale: 1.05, backgroundColor: '#1f2937' }}
               whileTap={{ scale: 0.95 }}
               className="bg-black text-white px-8 py-4 rounded-lg text-lg font-medium transition-colors"
             >
               Join the Waitlist →
-            </motion.button>
+            </motion.a>
             {/* <p className="text-sm text-gray-500 mt-8">Open source • Self-hosted • No credit card required</p> */}
             <p className="text-sm text-gray-500 mt-8">Managed by our team • Reliable service, no setup needed</p>
           </motion.div>
