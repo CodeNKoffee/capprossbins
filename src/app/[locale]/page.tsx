@@ -19,12 +19,12 @@ export default function Home() {
       <Header />
       <Hero />
       <Analytics />
-      <UseCases />
+      {/* <UseCases /> */}
       {/* <CaseStudies /> */}
-      <Security />
-      <Features />
+      {/* <Security /> */}
+      {/* <Features /> */}
       {/* <Testimonials /> */}
-      <Statistics />
+      {/* <Statistics /> */}
       <FAQ />
       <CTASection />
       <Footer />

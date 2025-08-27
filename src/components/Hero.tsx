@@ -58,7 +58,7 @@ const Hero = () => {
               whileTap={{ scale: 0.95 }}
               className="bg-black text-white px-8 py-4 rounded-lg text-lg font-medium transition-colors"
             >
-              Start CapprossBins Free →
+              Join the Waitlist →
             </motion.button>
             {/* <p className="text-sm text-gray-500 mt-8">Open source • Self-hosted • No credit card required</p> */}
             <p className="text-sm text-gray-500 mt-8">Managed by our team • Reliable service, no setup needed</p>

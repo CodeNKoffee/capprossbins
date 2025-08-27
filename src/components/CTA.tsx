@@ -45,7 +45,7 @@ export default function CTASection() {
               whileTap={{ scale: 0.95 }}
               className="px-8 py-4 bg-white text-emerald-700 font-semibold rounded-xl hover:bg-gray-50 transition-all duration-200 shadow-lg hover:shadow-xl"
             >
-              Book a Demo →
+              Join the Waitlist →
             </motion.button>
             
             {/* <motion.button

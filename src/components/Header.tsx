@@ -147,7 +147,7 @@ const Header = () => {
                 whileHover={{ scale: 1.05, backgroundColor: '#1f2937' }}
                 className="bg-black text-white ml-2 px-4 py-2 rounded-lg transition-colors"
               >
-                Try a Demo
+                Join the Waitlist
               </motion.a>
             </div>
 
