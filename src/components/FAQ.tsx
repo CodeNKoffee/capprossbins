@@ -7,39 +7,27 @@ import { ChevronDown } from 'lucide-react'
 const faqData = [
   {
     question: "What is Credit Binning?",
-    answer: "Credit binning is a statistical technique used to group credit applicants or accounts into different risk categories based on their credit characteristics. It helps lenders make more informed decisions by segmenting customers into homogeneous groups for better risk assessment and pricing strategies."
+    answer: "Credit binning is a statistical technique used to group credit applicants or accounts into distinct risk categories based on their credit characteristics. By segmenting customers into homogeneous groups, lenders can assess risk more effectively and apply tailored pricing strategies. Binning supports clearer decision-making and enhances model interpretability."
   },
   {
-    question: "How to use CapprossBins Platform?",
-    answer: "Our platform simplifies the binning process through an intuitive interface. Upload your credit data, select your binning criteria, and our AI-powered algorithms will automatically create optimal risk segments. You can customize bin boundaries, validate results, and export scorecards for implementation."
-  },
-  // {
-  //   question: "Is CapprossBins free?",
-  //   answer: "We offer a free tier that includes basic binning functionality for up to 10,000 records per month. For enterprise features like advanced analytics, custom algorithms, and unlimited processing, we offer competitive pricing plans starting from $99/month."
-  // },
-  // {
-  //   question: "Can I integrate with custom domain and branding?",
-  //   answer: "Yes! Our enterprise plan allows you to white-label the platform with your custom domain, logo, and brand colors. You can also integrate our binning API directly into your existing credit decisioning systems for seamless workflow integration."
-  // },
-  {
-    question: "What are Credit Scoring Data Rooms?",
-    answer: "Data Rooms are secure, collaborative spaces where you can share binning results, scorecards, and credit models with stakeholders, regulators, or third-party validators. They provide controlled access with detailed audit trails and real-time collaboration features."
-  },
-  // {
-  //   question: "Can I self-host CapprossBins?",
-  //   answer: "Yes, we offer on-premises deployment options for organizations with strict data governance requirements. Our self-hosted solution provides the same functionality as our cloud platform while ensuring your sensitive credit data never leaves your infrastructure."
-  // },
-  // {
-  //   question: "How can I contribute to CapprossBins?",
-  //   answer: "We welcome contributions from the credit risk community! You can contribute by sharing new binning algorithms, validation techniques, or industry-specific models through our developer portal. We also offer bounties for significant algorithmic improvements."
-  // },
-  {
-    question: "Who can use CapprossBins?",
-    answer: "Our platform is designed for credit risk professionals, data scientists, financial institutions, fintech companies, and anyone involved in credit scoring and risk assessment. It's suitable for both beginners learning about binning and experts building sophisticated models."
+    question: "Why Smart Binning Still Matters in Data Science?",
+    answer: "While often seen as a basic preprocessing step, binning is a strategic tool for improving model performance, interpretability, and business alignment. From credit scoring to churn prediction, smart binning helps transform raw data into structured, actionable insights—making models more transparent and decisions more defensible."
   },
   {
-    question: "How to implement model validation as a risk manager?",
-    answer: "Our platform includes comprehensive model validation tools including population stability index (PSI), characteristic stability index (CSI), and performance monitoring. You can set up automated alerts for model drift and generate regulatory-compliant validation reports."
+    question: "What CapprossBins Adds to the Table—and How the Platform Works?",
+    answer: "Most binning tools struggle to balance statistical rigor with business logic. CapprossBins was built to solve that.\n\nThe platform simplifies binning through an intuitive interface. Upload your CSV file, select the feature to bin, and define your criteria. CapprossBins then automates the process by:\n\n• Starting with quantile-based (equal-frequency) bins\n• Displaying key statistics for each bin—population distribution, bad rate, WOE, IV, Gini coefficient, and Jensen-Shannon divergence\n• Enforcing business and statistical constraints, including:\n    ◦ Monotonic Bad-Rate Trend: Ensures logical risk progression\n    ◦ Class Balance: Prevents bins with only \"good\" or \"bad\" cases\n    ◦ Bin Population: Recommends 5%–50% of observations per bin\n    ◦ Business-Aligned Ranges: Ensures bins make sense for decision-making\n    ◦ Bad-Rate Consolidation: Merges adjacent bins with similar bad rates to reduce redundancy and preserve monotonicity\n\nCapprossBins helps users build interpretable, compliant, and stable models—without sacrificing flexibility."
+  },
+  {
+    question: "Who Can Use CapprossBins?",
+    answer: "CapprossBins is designed for credit risk professionals, data scientists, financial institutions, fintech companies, and anyone involved in credit scoring and risk modeling. Whether you're just learning about binning or building advanced scorecards, the platform adapts to your level of expertise."
+  },
+  {
+    question: "Where Else Is Binning Used?",
+    answer: "Binning is widely applied across industries that rely on segmentation and pattern recognition. These include:\n\n• Marketing analytics\n• Retail analytics\n• Quality control\n• Healthcare (e.g., patient risk stratification)\n• Financial risk assessment\n• Insurance and investment firms\n• Telecommunications\n\nIn each of these fields, binning helps organize data into meaningful groups—supporting better decisions, clearer reporting, and more robust models."
+  },
+  {
+    question: "How do risk managers validate credit scoring models?",
+    answer: "Model validation in credit scoring involves tracking key indicators to ensure the model remains accurate, stable, and compliant over time. This typically includes calculating metrics like the Population Stability Index (PSI) to detect shifts in input distributions, and the Characteristic Stability Index (CSI) to monitor changes in variable behavior. Ongoing performance monitoring—such as tracking AUC, KS, and bad rate—helps identify early signs of model drift. When thresholds are breached, automated alerts and structured validation reports can support timely intervention and regulatory review."
   }
 ]
 
@@ -51,6 +39,68 @@ interface FAQItemProps {
 }
 
 const FAQItem = ({ question, answer, isOpen, onToggle }: FAQItemProps) => {
+  const formatAnswer = (text: string) => {
+    const lines = text.split('\n')
+    const result = []
+    
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i]
+      const prevLine = lines[i - 1] || ''
+      const nextLine = lines[i + 1] || ''
+      
+      // Check if current line is a bullet point
+      const isBulletPoint = line.startsWith('• ') || line.trim().startsWith('◦ ')
+      // Check if previous/next lines are bullet points
+      const prevIsBulletPoint = prevLine.startsWith('• ') || prevLine.trim().startsWith('◦ ')
+      const nextIsBulletPoint = nextLine.startsWith('• ') || nextLine.trim().startsWith('◦ ')
+      
+      // Add empty line before first bullet point in a list
+      if (isBulletPoint && !prevIsBulletPoint && prevLine !== '') {
+        result.push(<div key={`empty-before-${i}`} className="h-4"></div>)
+      }
+      
+      // Main bullet points (•)
+      if (line.startsWith('• ')) {
+        result.push(
+          <div key={i} className="pl-6 mb-2">
+            {line}
+          </div>
+        )
+      }
+      // Sub bullet points (◦) with more indentation
+      else if (line.trim().startsWith('◦ ')) {
+        result.push(
+          <div key={i} className="pl-12 mb-2">
+            {line.trim()}
+          </div>
+        )
+      }
+      // Regular text - add spacing for non-empty lines
+      else if (line.trim() !== '') {
+        result.push(
+          <div key={i} className="mb-4">
+            {line}
+          </div>
+        )
+      }
+      // Empty lines
+      else {
+        result.push(
+          <div key={i} className="h-4">
+            {line}
+          </div>
+        )
+      }
+      
+      // Add empty line after last bullet point in a list
+      if (isBulletPoint && !nextIsBulletPoint && nextLine !== '') {
+        result.push(<div key={`empty-after-${i}`} className="h-4"></div>)
+      }
+    }
+    
+    return result
+  }
+
   return (
     <div className="border-b border-gray-200 last:border-b-0">
       <button
@@ -76,7 +126,7 @@ const FAQItem = ({ question, answer, isOpen, onToggle }: FAQItemProps) => {
             className="overflow-hidden px-4"
           >
             <div className="pb-6 text-gray-600 leading-relaxed">
-              {answer}
+              {formatAnswer(answer)}
             </div>
           </motion.div>
         )}
