@@ -1,0 +1,5 @@
+[[redirects]]
+  from = "https://capprossbins.netlify.app"
+  to = "https://capprossbins.cappross.com/:splat"
+  status = 301
+  force = true
