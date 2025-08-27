@@ -156,7 +156,7 @@ const Analytics = () => {
                 whileHover={{ scale: 1.02 }}
                 className="bg-white border border-gray-200 rounded-lg p-4"
               >
-                <div className="text-sm font-medium text-gray-900 mb-1">Set Binning Rules</div>
+                <div className="text-sm font-medium text-gray-900 mb-1">Set Binning Constraints</div>
                 <div className="text-xs text-gray-600">Custom risk parameters</div>
               </motion.div>
               <motion.div
@@ -164,14 +164,14 @@ const Analytics = () => {
                 className="bg-orange-50 border border-orange-200 rounded-lg p-4"
               >
                 <div className="text-sm font-medium text-gray-900 mb-1">Track Model Performance</div>
-                <div className="text-xs text-gray-600">Real-time monitoring</div>
+                <div className="text-xs text-gray-600">Bin Statistical characteristics</div>
               </motion.div>
               <motion.div
                 whileHover={{ scale: 1.02 }}
                 className="bg-white border border-gray-200 rounded-lg p-4"
               >
-                <div className="text-sm font-medium text-gray-900 mb-1">Generate Risk Reports</div>
-                <div className="text-xs text-gray-600">Automated insights</div>
+                <div className="text-sm font-medium text-gray-900 mb-1">Generate Reports</div>
+                <div className="text-xs text-gray-600">Feature profiling report</div>
               </motion.div>
             </div>
           </motion.div>

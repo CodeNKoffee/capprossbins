@@ -25,7 +25,7 @@ export default function CTASection() {
             className="mb-8"
           >
             <span className="inline-block px-4 py-2 bg-emerald-500 bg-opacity-20 rounded-full text-emerald-100 text-sm font-medium mb-6">
-              🚀 Ready to transform your credit scoring?
+              🚀 Ready for digital transformation?
             </span>
           </motion.div>
 

@@ -159,7 +159,7 @@ export default function FAQ() {
           className="text-center mb-16"
         >
           <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
-            FAQ <span className="text-emerald-600">Credit Binning</span>
+            FAQ <span className="text-emerald-600">Feature Binning</span>
           </h2>
           <p className="text-gray-600 text-lg">
             Everything you need to know about CapprossBins and credit risk modeling

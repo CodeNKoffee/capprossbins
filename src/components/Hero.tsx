@@ -31,7 +31,7 @@ const Hero = () => {
             transition={{ duration: 0.8, delay: 0.2 }}
             className="text-5xl md:text-7xl font-bold text-gray-900 leading-tight"
           >
-            Advanced
+            Intelligent
             <br />
             <span className="text-emerald-600">Credit Scoring & Binning</span>
           </motion.h1>
@@ -43,7 +43,7 @@ const Hero = () => {
             className="mt-8 space-y-4"
           >
             <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              AI-powered credit scoring with advanced binning algorithms - your self-hosted alternative to legacy systems.
+              Your binning engine for transparent, intelligent credit scoring.<br />Built for clarity. Powered by binning. Trusted in credit scoring
             </p>
           </motion.div>
 
