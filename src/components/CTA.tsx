@@ -302,7 +302,7 @@ const CTASection: React.FC = () => {
           </p>
           
           {/* Enhanced Email Form */}
-          <div className="max-w-lg mx-auto mb-8">
+          <div className="max-w-2xl mx-auto mb-8"> {/* Increased max width */}
             <Formik<FormValues>
               initialValues={{ email: '' }}
               validationSchema={subscriptionSchema}
@@ -321,8 +321,8 @@ const CTASection: React.FC = () => {
                   <input type="hidden" name="form-name" value={FORM_NAME} />
                   <input type="hidden" name="bot-field" />
                   
-                  <div className="flex flex-col sm:flex-row gap-4 justify-center items-start">
-                    <div className="flex-1 !w-full">
+                  <div className="flex flex-col sm:flex-row gap-4 justify-center items-start w-full">
+                    <div className="w-full sm:flex-1"> {/* Made input container full width */}
                       <Field
                         type="email"
                         name="email"
