@@ -4,7 +4,7 @@ import { motion, Variants } from 'framer-motion'
 import { Formik, Form, Field, ErrorMessage, FormikHelpers } from 'formik'
 import * as Yup from 'yup'
 import { useState, useCallback, useEffect } from 'react'
-import { Observable, fromEvent, debounceTime, distinctUntilChanged, map, catchError, of, timeout, retry } from 'rxjs'
+import { useForm, ValidationError } from '@formspree/react'
 
 // Types
 interface FormValues {
@@ -16,27 +16,14 @@ interface SubmitStatus {
   message?: string
 }
 
-interface FormSubmissionResponse {
-  success: boolean
-  message?: string
-}
-
 interface AnimationConfig {
   container: Variants
   badge: Variants
   statusMessage: Variants
 }
 
-interface NetworkError extends Error {
-  status?: number
-  statusText?: string
-}
-
 // Constants
-const FORM_NAME = 'cta-waitlist' as const
-const SUBMIT_TIMEOUT_MS = 10000
-const MAX_RETRIES = 2
-const DEBOUNCE_TIME_MS = 300
+const FORMSPREE_FORM_ID = 'xldwdjna' as const
 const SUCCESS_MESSAGE_DURATION_MS = 5000
 const ERROR_MESSAGE_DURATION_MS = 5000
 
@@ -72,158 +59,29 @@ const animationConfig: AnimationConfig = {
   }
 }
 
-// Custom hook for form submission with RxJS
-const useFormSubmission = () => {
+const CTASection: React.FC = () => {
+  const [state, handleSubmit] = useForm(FORMSPREE_FORM_ID)
   const [submitStatus, setSubmitStatus] = useState<SubmitStatus>({ type: null })
 
-  const submitForm = useCallback((values: FormValues): Observable<FormSubmissionResponse> => {
-    return new Observable<FormSubmissionResponse>(observer => {
-      const formData = new URLSearchParams()
-      formData.append('form-name', FORM_NAME)
-      formData.append('email', values.email.trim().toLowerCase())
-
-      fetch('/', {
-        method: 'POST',
-        body: formData,
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded'
-        }
+  // Handle form submission status
+  useEffect(() => {
+    if (state.succeeded) {
+      setSubmitStatus({ 
+        type: 'success', 
+        message: 'Successfully joined the waitlist!' 
       })
-        .then(async response => {
-          if (!response.ok) {
-            const error: NetworkError = new Error(`HTTP ${response.status}: ${response.statusText}`)
-            error.status = response.status
-            error.statusText = response.statusText
-            throw error
-          }
-          return response
-        })
-        .then(() => {
-          observer.next({ 
-            success: true, 
-            message: 'Successfully joined the waitlist!' 
-          })
-          observer.complete()
-        })
-        .catch(error => {
-          observer.error(error)
-        })
-
-      // Cleanup function
-      return () => {
-        // Any cleanup logic if needed
-      }
-    }).pipe(
-      timeout(SUBMIT_TIMEOUT_MS),
-      retry(MAX_RETRIES),
-      catchError((error: NetworkError) => {
-        console.error('Form submission error:', error)
-        
-        let errorMessage = 'Something went wrong. Please try again.'
-        
-        if (error.name === 'TimeoutError') {
-          errorMessage = 'Request timed out. Please check your connection and try again.'
-        } else if (error.status === 429) {
-          errorMessage = 'Too many requests. Please wait a moment and try again.'
-        } else if (error.status && error.status >= 500) {
-          errorMessage = 'Server error. Please try again later.'
-        } else if (!navigator.onLine) {
-          errorMessage = 'No internet connection. Please check your network and try again.'
-        }
-
-        return of({ 
-          success: false, 
-          message: errorMessage 
-        })
-      })
-    )
-  }, [])
-
-  const handleSubmit = useCallback(async (
-    values: FormValues, 
-    { setSubmitting, resetForm }: FormikHelpers<FormValues>
-  ): Promise<void> => {
-    try {
-      setSubmitStatus({ type: null })
-
-      const submission$ = submitForm(values)
-      
-      submission$.subscribe({
-        next: (response: FormSubmissionResponse) => {
-          if (response.success) {
-            setSubmitStatus({ 
-              type: 'success', 
-              message: response.message 
-            })
-            resetForm()
-            setTimeout(() => setSubmitStatus({ type: null }), SUCCESS_MESSAGE_DURATION_MS)
-          } else {
-            setSubmitStatus({ 
-              type: 'error', 
-              message: response.message 
-            })
-            setTimeout(() => setSubmitStatus({ type: null }), ERROR_MESSAGE_DURATION_MS)
-          }
-        },
-        error: (error: Error) => {
-          console.error('Subscription error:', error)
-          setSubmitStatus({ 
-            type: 'error', 
-            message: 'An unexpected error occurred. Please try again.' 
-          })
-          setTimeout(() => setSubmitStatus({ type: null }), ERROR_MESSAGE_DURATION_MS)
-        },
-        complete: () => {
-          setSubmitting(false)
-        }
-      })
-    } catch (error) {
-      console.error('Submit handler error:', error)
+      setTimeout(() => setSubmitStatus({ type: null }), SUCCESS_MESSAGE_DURATION_MS)
+    }
+    
+    // Fixed: Check if errors exist properly
+    if (state.errors && Array.isArray(state.errors) && state.errors.length > 0) {
       setSubmitStatus({ 
         type: 'error', 
-        message: 'Failed to submit form. Please try again.' 
+        message: 'Something went wrong. Please try again.' 
       })
-      setSubmitting(false)
       setTimeout(() => setSubmitStatus({ type: null }), ERROR_MESSAGE_DURATION_MS)
     }
-  }, [submitForm])
-
-  return { submitStatus, handleSubmit }
-}
-
-// Custom hook for email input enhancement with RxJS
-const useEmailInputEnhancement = () => {
-  useEffect(() => {
-    const emailInput = document.querySelector<HTMLInputElement>('input[name="email"]')
-    
-    if (!emailInput) return
-
-    const inputStream$ = fromEvent<InputEvent>(emailInput, 'input').pipe(
-      map((event) => (event.target as HTMLInputElement).value),
-      debounceTime(DEBOUNCE_TIME_MS),
-      distinctUntilChanged(),
-      map(value => value.trim().toLowerCase())
-    )
-
-    const subscription = inputStream$.subscribe({
-      next: (value: string) => {
-        // Enhanced email validation feedback could be added here
-        console.log('Email input processed:', value)
-      },
-      error: (error: Error) => {
-        console.error('Email input stream error:', error)
-      }
-    })
-
-    return () => {
-      subscription.unsubscribe()
-    }
-  }, [])
-}
-
-const CTASection: React.FC = () => {
-  const { submitStatus, handleSubmit } = useFormSubmission()
-  useEmailInputEnhancement()
+  }, [state.succeeded, state.errors])
 
   const renderStatusMessage = useCallback(() => {
     if (!submitStatus.type) return null
@@ -301,26 +159,30 @@ const CTASection: React.FC = () => {
           </p>
           
           {/* Enhanced Email Form */}
-          <div className="max-w-2xl mx-auto mb-8"> {/* Increased max width */}
+          <div className="max-w-2xl mx-auto mb-8">
             <Formik<FormValues>
               initialValues={{ email: '' }}
               validationSchema={subscriptionSchema}
-              onSubmit={handleSubmit}
+              onSubmit={(values: FormValues, helpers: FormikHelpers<FormValues>) => {
+                // Fixed: Proper typing instead of any
+                const formEvent = new Event('submit') as unknown as React.FormEvent<HTMLFormElement>
+                Object.defineProperty(formEvent, 'target', {
+                  value: {
+                    email: { value: values.email }
+                  },
+                  enumerable: true
+                })
+                
+                handleSubmit(formEvent)
+                helpers.setSubmitting(false)
+              }}
               validateOnChange={true}
               validateOnBlur={true}
             >
               {({ isSubmitting, errors, touched, values }) => (
-                <Form 
-                  name={FORM_NAME}
-                  action="https://formspree.io/f/xldwdjna"
-                  method="POST"
-                >
-                  {/* Netlify Form Attributes */}
-                  <input type="hidden" name="form-name" value={FORM_NAME} />
-                  <input type="hidden" name="bot-field" />
-                  
+                <Form>
                   <div className="flex flex-col sm:flex-row gap-4 justify-center items-start w-full">
-                    <div className="w-full sm:flex-1"> {/* Made input container full width */}
+                    <div className="w-full sm:flex-1">
                       <Field
                         type="email"
                         name="email"
@@ -341,23 +203,29 @@ const CTASection: React.FC = () => {
                         className="text-red-200 text-sm mt-2 text-center"
                         aria-live="polite"
                       />
+                      <ValidationError 
+                        prefix="Email" 
+                        field="email"
+                        errors={state.errors}
+                        className="text-red-200 text-sm mt-2 text-center"
+                      />
                     </div>
                     <motion.button
                       type="submit"
-                      disabled={isSubmitting || !values.email}
+                      disabled={isSubmitting || !values.email || state.submitting}
                       whileHover={!isSubmitting ? { 
                         scale: 1.05, 
                         backgroundColor: '#f3f4f6' 
                       } : {}}
                       whileTap={!isSubmitting ? { scale: 0.95 } : {}}
                       className={`w-full sm:w-fit px-8 py-4 bg-white text-emerald-700 font-semibold rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-emerald-300 focus:ring-offset-2 focus:ring-offset-emerald-700 ${
-                        isSubmitting || !values.email 
+                        isSubmitting || !values.email || state.submitting
                           ? 'opacity-75 cursor-not-allowed hover:bg-white' 
                           : 'hover:bg-gray-50'
                       }`}
                       aria-label={isSubmitting ? 'Joining waitlist...' : 'Join the waitlist'}
                     >
-                      {isSubmitting ? (
+                      {isSubmitting || state.submitting ? (
                         <span className="flex items-center">
                           <svg className="animate-spin -ml-1 mr-2 h-4 w-4" fill="none" viewBox="0 0 24 24">
                             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
