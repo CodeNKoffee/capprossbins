@@ -351,7 +351,7 @@ const CTASection: React.FC = () => {
                         backgroundColor: '#f3f4f6' 
                       } : {}}
                       whileTap={!isSubmitting ? { scale: 0.95 } : {}}
-                      className={`px-8 py-4 bg-white text-emerald-700 font-semibold rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-emerald-300 focus:ring-offset-2 focus:ring-offset-emerald-700 ${
+                      className={`w-full sm:w-fit px-8 py-4 bg-white text-emerald-700 font-semibold rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-emerald-300 focus:ring-offset-2 focus:ring-offset-emerald-700 ${
                         isSubmitting || !values.email 
                           ? 'opacity-75 cursor-not-allowed hover:bg-white' 
                           : 'hover:bg-gray-50'

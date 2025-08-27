@@ -110,12 +110,12 @@ const Analytics = () => {
                 {/* Stats */}
                 {/* Table Screenshot */}
                 <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-                  <div className="relative w-full h-48"> {/* Added container with relative positioning */}
+                  <div className="relative w-full h-48 overflow-hidden"> {/* Added overflow-hidden */}
                     <Image
                       src="/assets/images/bin-stats.jpeg"
                       alt="Bin Stats Screenshot"
-                      fill // Use fill instead of width/height
-                      className="object-cover rounded" // Removed w-full and !h-48
+                      fill
+                      className="object-cover rounded object-left" /* Added object-left */
                     />
                   </div>
                   {/* <div className="grid grid-cols-3 gap-4">
