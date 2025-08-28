@@ -24,12 +24,12 @@ export const metadata: Metadata = {
     address: false,
     telephone: false,
   },
-  metadataBase: new URL("https://capprossbins.netlify.app"),
+  metadataBase: new URL("https://capprossbins.cappross.com"),
   alternates: {
-    canonical: "https://capprossbins.netlify.app",
+    canonical: "https://capprossbins.cappross.com",
     types: {
       "text/html": [
-        { url: "https://capprossbins.netlify.app", title: "CapprossBins - Netlify" },
+        { url: "https://capprossbins.cappross.com", title: "CapprossBins - Netlify" },
         { url: "https://capprossbins.cappross.com", title: "CapprossBins - Custom Domain" }
       ]
     }
@@ -38,7 +38,7 @@ export const metadata: Metadata = {
     title: "CapprossBins - Intelligent Credit Scoring & Binning",
     description:
       "Your binning engine for transparent, intelligent credit scoring. Built for clarity. Powered by binning. Trusted in credit scoring.",
-    url: "https://capprossbins.netlify.com",
+    url: "https://capprossbins.cappross.com",
     siteName: "CapprossBins",
     images: [
       {
