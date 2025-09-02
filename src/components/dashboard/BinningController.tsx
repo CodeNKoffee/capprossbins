@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { motion } from 'framer-motion'
 import { Settings, Play, Zap, Target, Users, TrendingUp } from 'lucide-react'
+// import { binningEngine } from '@/lib/binning-wasm'
 
 interface DataInfo {
   filename: string
