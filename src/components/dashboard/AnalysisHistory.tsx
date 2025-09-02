@@ -14,6 +14,35 @@ import {
   Archive
 } from 'lucide-react'
 
+interface BinStatistics {
+  binNumber: number | string
+  range: string
+  count: number
+  percentage: number
+  badRate: number
+  woe: number
+  iv: number
+}
+
+interface BinningResults {
+  bins: BinStatistics[]
+  statistics: {
+    totalIV: number
+    gini: number
+    ks: number
+  }
+  charts: {
+    badRateChart: unknown
+    populationChart: unknown
+    woeChart: unknown
+  }
+  validation: {
+    isMonotonic: boolean
+    hasMinPopulation: boolean
+    warnings: string[]
+  }
+}
+
 interface SavedAnalysis {
   id: string
   name: string
@@ -25,27 +54,7 @@ interface SavedAnalysis {
   binCount: number
   isMonotonic: boolean
   hasWarnings: boolean
-  results: {
-    bins: Array<{
-      binNumber: number | string
-      range: string
-      count: number
-      percentage: number
-      badRate: number
-      woe: number
-      iv: number
-    }>
-    statistics: {
-      totalIV: number
-      gini: number
-      ks: number
-    }
-    validation: {
-      isMonotonic: boolean
-      hasMinPopulation: boolean
-      warnings: string[]
-    }
-  }
+  results: BinningResults
 }
 
 interface AnalysisHistoryProps {
@@ -89,6 +98,7 @@ export default function AnalysisHistory({ onLoadAnalysis, onNewAnalysis }: Analy
           results: {
             bins: [],
             statistics: { totalIV: 0.847, gini: 0.652, ks: 0.45 },
+            charts: { badRateChart: {}, populationChart: {}, woeChart: {} },
             validation: { isMonotonic: true, hasMinPopulation: true, warnings: [] }
           }
         },
@@ -106,6 +116,7 @@ export default function AnalysisHistory({ onLoadAnalysis, onNewAnalysis }: Analy
           results: {
             bins: [],
             statistics: { totalIV: 0.234, gini: 0.387, ks: 0.28 },
+            charts: { badRateChart: {}, populationChart: {}, woeChart: {} },
             validation: { isMonotonic: false, hasMinPopulation: true, warnings: ['Non-monotonic progression detected'] }
           }
         },
@@ -123,6 +134,7 @@ export default function AnalysisHistory({ onLoadAnalysis, onNewAnalysis }: Analy
           results: {
             bins: [],
             statistics: { totalIV: 0.156, gini: 0.298, ks: 0.22 },
+            charts: { badRateChart: {}, populationChart: {}, woeChart: {} },
             validation: { isMonotonic: true, hasMinPopulation: true, warnings: [] }
           }
         }
