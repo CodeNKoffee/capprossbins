@@ -227,22 +227,78 @@ export default function DashboardPage() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.3 }}
-          className="bg-white rounded-xl shadow-lg border border-gray-200 min-h-[600px]"
+          className="bg-white rounded-xl shadow-lg border border-gray-200 min-h-[600px] relative"
         >
-          {isProcessing && (
-            <div className="absolute inset-0 bg-white bg-opacity-90 flex items-center justify-center z-50 rounded-xl">
-              <div className="text-center">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-600 mx-auto mb-4"></div>
-                <p className="text-gray-600">Processing your data...</p>
-              </div>
-            </div>
-          )}
-          
           <div className="p-6">
             {renderStepContent()}
           </div>
         </motion.div>
       </div>
+
+      {/* Full Screen Glass Loading Overlay */}
+      {isProcessing && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 z-50 flex items-center justify-center glass-overlay"
+        >
+          {/* Loading Content */}
+          <motion.div
+            initial={{ scale: 0.8, opacity: 0, y: 50 }}
+            animate={{ scale: 1, opacity: 1, y: 0 }}
+            transition={{ delay: 0.2, type: "spring", stiffness: 100, damping: 20 }}
+            className="relative z-10 glass-strong rounded-3xl p-10 shadow-2xl max-w-md mx-4 float-animation"
+          >
+            <div className="text-center">
+              {/* Animated Loading Spinner */}
+              <div className="relative mb-8">
+                <div className="animate-spin rounded-full h-20 w-20 border-4 border-emerald-200/60 border-t-emerald-500 mx-auto"></div>
+                <div className="absolute inset-0 rounded-full bg-gradient-to-tr from-emerald-100/30 to-blue-100/30 animate-pulse loading-pulse"></div>
+                {/* Inner glow effect */}
+                <div className="absolute inset-2 rounded-full bg-gradient-to-tr from-emerald-50/50 to-transparent animate-spin" style={{ animationDuration: '3s' }}></div>
+              </div>
+              
+              {/* Loading Text */}
+              <motion.h3 
+                className="text-2xl font-bold text-gray-800 mb-3"
+                animate={{ opacity: [0.7, 1, 0.7] }}
+                transition={{ duration: 2, repeat: Infinity }}
+              >
+                Processing Analysis
+              </motion.h3>
+              <p className="text-gray-700 mb-6 text-lg">
+                Running binning algorithms and calculating statistics...
+              </p>
+              
+              {/* Progress Dots */}
+              <div className="flex justify-center space-x-3">
+                {[0, 1, 2].map((i) => (
+                  <motion.div
+                    key={i}
+                    className="w-3 h-3 bg-gradient-to-r from-emerald-400 to-emerald-600 rounded-full shadow-lg"
+                    animate={{
+                      scale: [1, 1.4, 1],
+                      opacity: [0.4, 1, 0.4],
+                      y: [0, -8, 0],
+                    }}
+                    transition={{
+                      duration: 1.8,
+                      repeat: Infinity,
+                      delay: i * 0.3,
+                      ease: "easeInOut"
+                    }}
+                  />
+                ))}
+              </div>
+              
+              {/* Additional visual elements */}
+              <div className="absolute -top-4 -right-4 w-8 h-8 bg-gradient-to-br from-blue-400/30 to-purple-400/30 rounded-full animate-bounce"></div>
+              <div className="absolute -bottom-2 -left-2 w-6 h-6 bg-gradient-to-br from-emerald-400/30 to-green-400/30 rounded-full animate-pulse"></div>
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
     </div>
   )
 }
