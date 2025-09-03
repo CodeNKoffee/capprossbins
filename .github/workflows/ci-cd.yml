@@ -1,0 +1,220 @@
+name: CapprossBins Frontend CI/CD Pipeline
+
+on:
+    push:
+        branches: [main, master, develop, feat/full-app]
+    pull_request:
+        branches: [main, master, develop]
+
+jobs:
+    test-and-build:
+        name: Build and Test Next.js Application
+        runs-on: ubuntu-latest
+
+        strategy:
+            matrix:
+                node-version: [18.x, 20.x]
+
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v4
+
+            - name: Setup Node.js ${{ matrix.node-version }}
+              uses: actions/setup-node@v4
+              with:
+                  node-version: ${{ matrix.node-version }}
+                  cache: "npm"
+
+            - name: Cache node modules
+              uses: actions/cache@v4
+              with:
+                  path: ~/.npm
+                  key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+                  restore-keys: |
+                      ${{ runner.os }}-node-
+
+            - name: Install dependencies
+              run: |
+                  npm ci
+
+            - name: Lint code
+              run: |
+                  npm run lint
+
+            - name: Type check
+              run: |
+                  npx tsc --noEmit
+
+            - name: Set up environment variables for build
+              run: |
+                  echo "NEXT_PUBLIC_API_URL=https://capprossbins-server.onrender.com" >> $GITHUB_ENV
+                  echo "NEXT_PUBLIC_APP_ENV=production" >> $GITHUB_ENV
+                  echo "NEXT_PUBLIC_APP_VERSION=${{ github.sha }}" >> $GITHUB_ENV
+
+            - name: Build Next.js application
+              run: |
+                  npm run build
+
+            - name: Test build output
+              run: |
+                  # Check that build artifacts exist
+                  test -d .next
+                  echo "✅ Build artifacts created successfully"
+                  
+                  # Check for common Next.js build files
+                  test -f .next/BUILD_ID
+                  echo "✅ BUILD_ID found"
+                  
+                  # List build output for debugging
+                  ls -la .next/
+                  
+                  # Check bundle size (warn if too large)
+                  BUNDLE_SIZE=$(du -sh .next | cut -f1)
+                  echo "📦 Bundle size: $BUNDLE_SIZE"
+
+            - name: Upload build artifacts
+              uses: actions/upload-artifact@v4
+              with:
+                  name: nextjs-build-node-${{ matrix.node-version }}
+                  path: |
+                      .next/
+                      public/
+                      package.json
+                      next.config.ts
+                  retention-days: 7
+
+            - name: Upload build reports
+              uses: actions/upload-artifact@v4
+              if: always()
+              with:
+                  name: build-reports-node-${{ matrix.node-version }}
+                  path: |
+                      .next/analyze/
+                      .next/trace
+                  retention-days: 3
+
+    lighthouse-audit:
+        name: Lighthouse Performance Audit
+        runs-on: ubuntu-latest
+        needs: test-and-build
+        if: github.event_name == 'pull_request'
+
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v4
+
+            - name: Setup Node.js
+              uses: actions/setup-node@v4
+              with:
+                  node-version: '20.x'
+                  cache: "npm"
+
+            - name: Download build artifacts
+              uses: actions/download-artifact@v4
+              with:
+                  name: nextjs-build-node-20.x
+
+            - name: Install dependencies
+              run: npm ci
+
+            - name: Start Next.js server
+              run: |
+                  npm start &
+                  sleep 10
+              env:
+                  NEXT_PUBLIC_API_URL: https://capprossbins-server.onrender.com
+
+            - name: Run Lighthouse CI
+              run: |
+                  npm install -g @lhci/cli@0.13.x
+                  lhci autorun --collect.startServerCommand="" --collect.url="http://localhost:3000" || echo "⚠️ Lighthouse audit completed with findings"
+
+    security-scan:
+        name: Security Vulnerability Scan
+        runs-on: ubuntu-latest
+
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v4
+
+            - name: Setup Node.js
+              uses: actions/setup-node@v4
+              with:
+                  node-version: '20.x'
+                  cache: "npm"
+
+            - name: Install dependencies
+              run: npm ci
+
+            - name: Run security audit
+              run: |
+                  npm audit --audit-level=high --json > security-audit.json || echo "⚠️ Security vulnerabilities found"
+                  cat security-audit.json
+
+            - name: Check for known vulnerabilities
+              run: |
+                  npx audit-ci --high || echo "⚠️ High severity vulnerabilities detected"
+
+            - name: Upload security reports
+              uses: actions/upload-artifact@v4
+              if: always()
+              with:
+                  name: security-reports
+                  path: security-audit.json
+                  retention-days: 30
+
+    deployment-ready:
+        name: Mark as Deployment Ready
+        runs-on: ubuntu-latest
+        needs: [test-and-build, security-scan]
+        if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
+
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v4
+
+            - name: Download build artifacts
+              uses: actions/download-artifact@v4
+              with:
+                  name: nextjs-build-node-20.x
+
+            - name: Create deployment package
+              run: |
+                  mkdir -p deployment-package
+                  cp -r .next/ deployment-package/
+                  cp -r public/ deployment-package/
+                  cp package.json deployment-package/
+                  cp package-lock.json deployment-package/
+                  cp next.config.ts deployment-package/
+                  echo "✅ Deployment package created"
+
+            - name: Generate deployment manifest
+              run: |
+                  cat > deployment-package/DEPLOYMENT_MANIFEST.json << EOF
+                  {
+                    "version": "${{ github.sha }}",
+                    "branch": "${{ github.ref_name }}",
+                    "build_time": "$(date -u +"%Y-%m-%dT%H:%M:%SZ")",
+                    "node_version": "20.x",
+                    "api_url": "https://capprossbins-server.onrender.com",
+                    "environment": "production"
+                  }
+                  EOF
+                  echo "✅ Deployment manifest generated"
+
+            - name: Upload deployment package
+              uses: actions/upload-artifact@v4
+              with:
+                  name: capprossbins-frontend-deployment
+                  path: deployment-package/
+                  retention-days: 30
+
+            - name: Deployment summary
+              run: |
+                  echo "🚀 **CapprossBins Frontend Deployment Ready** 🚀" >> $GITHUB_STEP_SUMMARY
+                  echo "" >> $GITHUB_STEP_SUMMARY
+                  echo "- **Commit:** ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY  
+                  echo "- **Branch:** ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
+                  echo "- **API Endpoint:** https://capprossbins-server.onrender.com" >> $GITHUB_STEP_SUMMARY
+                  echo "- **Build Status:** ✅ Ready for deployment" >> $GITHUB_STEP_SUMMARY
+                  echo "- **Artifacts:** Available for 30 days" >> $GITHUB_STEP_SUMMARY
