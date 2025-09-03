@@ -3,12 +3,14 @@
 import { useState, useCallback } from 'react'
 import { motion } from 'framer-motion'
 import { Upload, File, AlertCircle, CheckCircle, X } from 'lucide-react'
+import { CapprossBinsAPI } from '../../../lib/api'
 
 interface DataInfo {
   filename: string
   rows: number
   columns: string[]
   preview: Record<string, unknown>[]
+  upload_id: string
 }
 
 interface DataUploaderProps {
@@ -21,93 +23,29 @@ export default function DataUploader({ onUpload }: DataUploaderProps) {
   const [error, setError] = useState<string | null>(null)
   const [uploadedFile, setUploadedFile] = useState<File | null>(null)
 
-  const validateCSVData = (data: unknown[][]): { isValid: boolean; error?: string } => {
-    if (data.length < 2) {
-      return { isValid: false, error: 'CSV must have at least 2 rows (header + data)' }
-    }
-    
-    if (data[0].length < 2) {
-      return { isValid: false, error: 'CSV must have at least 2 columns' }
-    }
-    
-    // Check for required column patterns (credit scoring features)
-    const headers = data[0] as string[]
-    const hasTargetColumn = headers.some(h => 
-      h.toLowerCase().includes('good_bad') || 
-      h.toLowerCase().includes('target') || 
-      h.toLowerCase().includes('default')
-    )
-    
-    if (!hasTargetColumn) {
-      return { 
-        isValid: false, 
-        error: 'No target column found. Expected column names containing "good_bad", "target", or "default"' 
-      }
-    }
-    
-    return { isValid: true }
-  }
-
-  const parseCSV = (text: string): unknown[][] => {
-    const lines = text.trim().split('\n')
-    return lines.map(line => {
-      const values: string[] = []
-      let current = ''
-      let inQuotes = false
-      
-      for (let i = 0; i < line.length; i++) {
-        const char = line[i]
-        if (char === '"') {
-          inQuotes = !inQuotes
-        } else if (char === ',' && !inQuotes) {
-          values.push(current.trim())
-          current = ''
-        } else {
-          current += char
-        }
-      }
-      values.push(current.trim())
-      return values
-    })
-  }
-
   const processFile = useCallback(async (file: File) => {
-    setIsProcessing(true)
     setError(null)
-    
+    setIsProcessing(true)
+    setUploadedFile(file)
+
     try {
-      const text = await file.text()
-      const data = parseCSV(text)
-      
-      const validation = validateCSVData(data)
-      if (!validation.isValid) {
-        throw new Error(validation.error)
-      }
-      
-      const headers = data[0] as string[]
-      const rows = data.slice(1)
-      
-      // Create preview with first 5 rows
-      const preview = rows.slice(0, 5).map(row => {
-        const obj: Record<string, unknown> = {}
-        headers.forEach((header, index) => {
-          obj[header] = row[index]
-        })
-        return obj
-      })
+      // Use the real backend API to upload the file
+      const uploadResult = await CapprossBinsAPI.uploadData(file)
       
       const dataInfo: DataInfo = {
-        filename: file.name,
-        rows: rows.length,
-        columns: headers,
-        preview
+        filename: uploadResult.filename,
+        rows: uploadResult.rows,
+        columns: uploadResult.columns,
+        preview: uploadResult.preview,
+        upload_id: uploadResult.upload_id
       }
-      
-      setUploadedFile(file)
+
       onUpload(dataInfo)
       
     } catch (err) {
+      console.error('File upload error:', err)
       setError(err instanceof Error ? err.message : 'Failed to process file')
+      setUploadedFile(null)
     } finally {
       setIsProcessing(false)
     }
