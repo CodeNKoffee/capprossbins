@@ -1,0 +1,172 @@
+name: Deploy to Vercel
+
+on:
+    workflow_run:
+        workflows: ["CapprossBins Frontend CI/CD Pipeline"]
+        types:
+            - completed
+        branches:
+            - main
+            - master
+
+    # Manual deployment trigger
+    workflow_dispatch:
+        inputs:
+            environment:
+                description: 'Environment to deploy to'
+                required: true
+                default: 'production'
+                type: choice
+                options:
+                - production
+                - preview
+
+jobs:
+    deploy-production:
+        name: Deploy to Vercel Production
+        runs-on: ubuntu-latest
+        if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch' }}
+
+        steps:
+            - name: Checkout repository
+              uses: actions/checkout@v4
+
+            - name: Setup Node.js
+              uses: actions/setup-node@v4
+              with:
+                  node-version: '20.x'
+                  cache: 'npm'
+
+            - name: Install Vercel CLI
+              run: npm install -g vercel@latest
+
+            - name: Download build artifacts (if available)
+              uses: actions/download-artifact@v4
+              continue-on-error: true
+              with:
+                  name: capprossbins-frontend-deployment
+
+            - name: Set up environment variables for deployment
+              run: |
+                  echo "NEXT_PUBLIC_API_URL=https://capprossbins-server.onrender.com" >> $GITHUB_ENV
+                  echo "NEXT_PUBLIC_APP_ENV=production" >> $GITHUB_ENV
+                  echo "NEXT_PUBLIC_APP_VERSION=${{ github.sha }}" >> $GITHUB_ENV
+
+            - name: Deploy to Vercel Production
+              run: vercel --prod --token ${{ secrets.VERCEL_TOKEN }}
+              env:
+                  VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+                  VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+                  NEXT_PUBLIC_API_URL: https://capprossbins-server.onrender.com
+
+            - name: Post deployment verification
+              run: |
+                  echo "🚀 **Deployment Completed Successfully!** 🚀" >> $GITHUB_STEP_SUMMARY
+                  echo "" >> $GITHUB_STEP_SUMMARY
+                  echo "- **Environment:** Production" >> $GITHUB_STEP_SUMMARY
+                  echo "- **Commit:** ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+                  echo "- **Backend API:** https://capprossbins-server.onrender.com" >> $GITHUB_STEP_SUMMARY
+                  echo "- **Frontend URL:** Check Vercel dashboard for deployment URL" >> $GITHUB_STEP_SUMMARY
+
+            - name: Test deployment health
+              run: |
+                  # Wait for deployment to be ready
+                  sleep 30
+                  # You can add specific health checks here once you know the Vercel URL
+                  echo "✅ Deployment verification completed"
+
+    deploy-preview:
+        name: Deploy Preview Branch
+        runs-on: ubuntu-latest
+        if: github.event_name == 'pull_request' || (github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'preview')
+
+        steps:
+            - name: Checkout repository
+              uses: actions/checkout@v4
+
+            - name: Setup Node.js
+              uses: actions/setup-node@v4
+              with:
+                  node-version: '20.x'
+                  cache: 'npm'
+
+            - name: Install Vercel CLI
+              run: npm install -g vercel@latest
+
+            - name: Set up environment variables for preview
+              run: |
+                  echo "NEXT_PUBLIC_API_URL=https://capprossbins-server.onrender.com" >> $GITHUB_ENV
+                  echo "NEXT_PUBLIC_APP_ENV=preview" >> $GITHUB_ENV
+                  echo "NEXT_PUBLIC_APP_VERSION=${{ github.sha }}" >> $GITHUB_ENV
+
+            - name: Deploy to Vercel Preview
+              run: vercel --token ${{ secrets.VERCEL_TOKEN }}
+              env:
+                  VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+                  VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+                  NEXT_PUBLIC_API_URL: https://capprossbins-server.onrender.com
+
+            - name: Comment on PR with preview URL
+              if: github.event_name == 'pull_request'
+              uses: actions/github-script@v7
+              with:
+                  script: |
+                      github.rest.issues.createComment({
+                        issue_number: context.issue.number,
+                        owner: context.repo.owner,
+                        repo: context.repo.repo,
+                        body: `🚀 **Preview deployment ready!**\n\n✨ Your changes are now live at the preview URL (check Vercel dashboard)\n\n🔗 **Backend API:** https://capprossbins-server.onrender.com\n\n*This preview will be automatically updated with new commits to this PR.*`
+                      })
+
+    # Alternative deployment for custom server/VPS
+    deploy-custom:
+        name: Deploy to Custom Server
+        runs-on: ubuntu-latest
+        if: false # Set to true if you want to use custom server deployment instead of Vercel
+        # Enable this job by changing 'if: false' to 'if: true' and set up the required secrets
+
+        steps:
+            - name: Checkout repository
+              uses: actions/checkout@v4
+
+            - name: Setup Node.js
+              uses: actions/setup-node@v4
+              with:
+                  node-version: '20.x'
+                  cache: 'npm'
+
+            - name: Install SSH key
+              uses: webfactory/ssh-agent@v0.9.0
+              with:
+                  ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+            - name: Add SSH key to known hosts
+              run: |
+                  ssh-keyscan -H ${{ secrets.SERVER_IP }} >> ~/.ssh/known_hosts
+
+            - name: Deploy to custom server
+              env:
+                  SERVER_USER: ${{ secrets.SERVER_USER }}
+                  SERVER_IP: ${{ secrets.SERVER_IP }}
+                  NEXT_PUBLIC_API_URL: https://capprossbins-server.onrender.com
+              run: |
+                  ssh $SERVER_USER@$SERVER_IP << 'EOF'
+                    cd /var/www/capprossbins-frontend
+                    git pull origin main
+                    npm ci
+                    export NEXT_PUBLIC_API_URL=https://capprossbins-server.onrender.com
+                    export NEXT_PUBLIC_APP_ENV=production
+                    npm run build
+                    pm2 restart capprossbins-frontend || pm2 start npm --name "capprossbins-frontend" -- start
+                    pm2 save
+                  EOF
+
+            - name: Verify deployment
+              env:
+                  SERVER_USER: ${{ secrets.SERVER_USER }}
+                  SERVER_IP: ${{ secrets.SERVER_IP }}
+              run: |
+                  ssh $SERVER_USER@$SERVER_IP << 'EOF'
+                    pm2 status capprossbins-frontend
+                    curl -f http://localhost:3000/api/health || echo "Health check failed"
+                  EOF

@@ -1,6 +1,7 @@
-const API_BASE_URL = process.env.NODE_ENV === 'production'
-  ? 'https://api.cappross.com'
-  : 'http://localhost:8000'
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 
+  (process.env.NODE_ENV === 'production'
+    ? 'https://capprossbins-server.onrender.com'
+    : 'http://localhost:8000')
 
 // Authentication Types
 export interface LoginRequest {
