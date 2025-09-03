@@ -31,6 +31,7 @@ interface DataInfo {
   rows: number
   columns: string[]
   preview: Record<string, unknown>[]
+  upload_id: string
 }
 
 interface BinStatistics {

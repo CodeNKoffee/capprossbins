@@ -3,13 +3,14 @@
 import { useState } from 'react'
 import { motion } from 'framer-motion'
 import { Settings, Play, Zap, Target, Users, TrendingUp } from 'lucide-react'
-// import { binningEngine } from '@/lib/binning-wasm'
+import { CapprossBinsAPI, type BinningConfig as APIBinningConfig } from '../../../lib/api'
 
 interface DataInfo {
   filename: string
   rows: number
   columns: string[]
   preview: Record<string, unknown>[]
+  upload_id: string
 }
 
 interface BinStatistics {
@@ -106,20 +107,44 @@ export default function BinningController({
   const [isRunning, setIsRunning] = useState(false)
   const [logs, setLogs] = useState<string[]>([])
 
-  // Simulate the Python binning logic
+  // Run the real binning analysis using the backend API
   const runBinningAnalysis = async () => {
     setIsRunning(true)
     setIsProcessing(true)
     setLogs([])
 
     try {
-      // Simulate processing steps
+      // Convert local config to API format
+      const apiConfig: APIBinningConfig = {
+        mode: config.mode,
+        ...(config.mode === 'manual' && { bin_count: config.binCount }),
+        ...(config.mode === 'optimal' && {
+          min_bins: config.minBins,
+          max_bins: config.maxBins,
+          iv_threshold: config.ivThreshold
+        }),
+        enforce_population: config.enforcePopulation,
+        ...(config.enforcePopulation && {
+          min_population: config.minPopulation,
+          max_population: config.maxPopulation
+        }),
+        enforce_monotonicity: config.enforceMonotonicity,
+        merge_similar_rates: config.mergeSimilarRates,
+        ...(config.mergeSimilarRates && { merge_threshold: config.mergeThreshold }),
+        special_value: config.specialValue,
+        bad_value: config.badValue,
+        noise_filtering: config.noiseFiltering
+      }
+
+      // Show processing steps
       const steps = [
+        'Preparing analysis request...',
+        'Connecting to backend engine...',
         'Loading and validating data...',
         'Identifying target distribution...',
         'Handling special values and outliers...',
         config.mode === 'optimal' ? 'Searching for optimal bin configuration...' : 'Creating manual bins...',
-        'Enforcing population constraints...',
+        'Applying population constraints...',
         config.mergeSimilarRates ? 'Merging bins with similar bad rates...' : 'Skipping bad rate merging...',
         config.enforceMonotonicity ? 'Enforcing monotonic bad rate progression...' : 'Skipping monotonicity enforcement...',
         'Calculating WOE and IV statistics...',
@@ -129,104 +154,73 @@ export default function BinningController({
 
       for (let i = 0; i < steps.length; i++) {
         setLogs(prev => [...prev, steps[i]])
-        await new Promise(resolve => setTimeout(resolve, 800 + Math.random() * 400))
+        await new Promise(resolve => setTimeout(resolve, 600 + Math.random() * 300))
       }
 
-      // Simulate binning results based on configuration
-      const simulatedResults = generateSimulatedResults()
+      setLogs(prev => [...prev, 'Processing analysis with backend algorithms...'])
+
+      // Call the real backend API
+      const analysisResult = await CapprossBinsAPI.createAnalysis({
+        analysis_name: `${selectedFeature}_analysis_${new Date().toISOString().split('T')[0]}`,
+        description: `Binning analysis for ${selectedFeature} using ${config.mode} mode`,
+        upload_id: dataInfo.upload_id,
+        feature_name: selectedFeature,
+        target_name: targetColumn,
+        binning_config: apiConfig
+      })
       
       setLogs(prev => [...prev, '✅ Binning analysis completed successfully!'])
+      
+      // Convert API response to component format
+      const convertedResults: BinningResults = {
+        bins: analysisResult.bin_statistics.map(bin => ({
+          binNumber: bin.binNumber,
+          range: bin.range,
+          count: bin.count,
+          percentage: bin.percentage,
+          badRate: bin.badRate,
+          woe: bin.woe,
+          iv: bin.iv
+        })),
+        statistics: {
+          totalIV: analysisResult.total_iv,
+          gini: analysisResult.gini_coefficient,
+          ks: analysisResult.ks_statistic
+        },
+        charts: {
+          badRateChart: {},
+          populationChart: {},
+          woeChart: {}
+        },
+        validation: {
+          isMonotonic: analysisResult.is_monotonic,
+          hasMinPopulation: analysisResult.has_min_population,
+          warnings: analysisResult.warnings
+        }
+      }
       
       // Wait a moment before completing
       await new Promise(resolve => setTimeout(resolve, 1000))
       
-      onComplete(simulatedResults)
+      onComplete(convertedResults)
 
     } catch (error) {
-      setLogs(prev => [...prev, `❌ Error: ${error instanceof Error ? error.message : 'Unknown error'}`])
+      console.error('Binning analysis error:', error)
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred'
+      setLogs(prev => [...prev, `❌ Error: ${errorMessage}`])
+      
+      // Show more detailed error information
+      if (errorMessage.includes('Network')) {
+        setLogs(prev => [...prev, '💡 Check if backend server is running (http://localhost:8000)'])
+      } else if (errorMessage.includes('Unauthorized')) {
+        setLogs(prev => [...prev, '💡 Please check your authentication credentials'])
+      } else {
+        setLogs(prev => [...prev, '💡 Please check your data and configuration parameters'])
+      }
     } finally {
       setIsRunning(false)
       setIsProcessing(false)
     }
-  }
-
-  const generateSimulatedResults = (): BinningResults => {
-    const binCount = config.mode === 'optimal' 
-      ? Math.floor(Math.random() * (config.maxBins - config.minBins + 1)) + config.minBins
-      : config.binCount
-
-    const bins: BinStatistics[] = []
-    let totalIV = 0
-
-    // Generate Special bin if needed
-    if (config.specialValue) {
-      bins.push({
-        binNumber: 'Special',
-        range: config.specialValue,
-        count: Math.floor(dataInfo.rows * (Math.random() * 0.05 + 0.01)),
-        percentage: Math.random() * 3 + 1,
-        badRate: Math.random() * 0.4 + 0.2,
-        woe: (Math.random() - 0.5) * 2,
-        iv: Math.random() * 0.1
-      })
-    }
-
-    // Generate regular bins
-    for (let i = 1; i <= binCount; i++) {
-      const badRate = config.enforceMonotonicity 
-        ? (i - 1) / (binCount - 1) * 0.6 + 0.1  // Monotonic progression
-        : Math.random() * 0.6 + 0.1              // Random bad rates
-
-      const iv = Math.random() * 0.3
-      totalIV += iv
-
-      bins.push({
-        binNumber: i,
-        range: `[${(i-1) * 1000}, ${i * 1000})`,
-        count: Math.floor(dataInfo.rows / binCount * (0.8 + Math.random() * 0.4)),
-        percentage: (100 / binCount) * (0.8 + Math.random() * 0.4),
-        badRate: badRate,
-        woe: Math.log((1 - badRate) / badRate) * (Math.random() > 0.5 ? 1 : -1),
-        iv: iv
-      })
-    }
-
-    return {
-      bins,
-      statistics: {
-        totalIV: totalIV,
-        gini: Math.random() * 0.3 + 0.2,
-        ks: Math.random() * 0.4 + 0.2
-      },
-      charts: {
-        badRateChart: {},
-        populationChart: {},
-        woeChart: {}
-      },
-      validation: {
-        isMonotonic: config.enforceMonotonicity,
-        hasMinPopulation: config.enforcePopulation,
-        warnings: generateWarnings(bins, config)
-      }
-    }
-  }
-
-  const generateWarnings = (bins: BinStatistics[], config: BinningConfig): string[] => {
-    const warnings: string[] = []
-    
-    if (bins.some(bin => bin.percentage < config.minPopulation)) {
-      warnings.push('Some bins have population below minimum threshold')
-    }
-    
-    if (bins.some(bin => bin.iv < 0.01)) {
-      warnings.push('Some bins have very low Information Value')
-    }
-    
-    if (!config.enforceMonotonicity) {
-      warnings.push('Monotonicity not enforced - consider enabling for better scorecard performance')
-    }
-    
-    return warnings
   }
 
   const handleConfigChange = (key: keyof BinningConfig, value: unknown) => {
