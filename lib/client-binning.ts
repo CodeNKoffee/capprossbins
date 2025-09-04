@@ -3,11 +3,6 @@
  * Heavy lifting done in browser, algorithms called from backend via API
  */
 
-interface SplitResult {
-  binIndex: number
-  splitPoint: number
-}
-
 interface WOEIVResponse {
   woe_values: number[]
   iv_values: number[]
@@ -310,7 +305,7 @@ export class ClientSideBinningEngine {
         iv: (response as WOEIVResponse).iv_values[index]
       }))
 
-    } catch (_error) {
+    } catch {
       // Fallback: calculate WOE/IV client-side (less accurate)
       console.warn('Backend WOE/IV calculation failed, using client-side fallback')
       return this.calculateWOEClientSide(bins)
@@ -389,7 +384,7 @@ export class ClientSideBinningEngine {
     return bins.some(bin => bin.length >= minPopulation * 2)
   }
 
-  private static findBestSplit(bins: Array<Array<{ feature: number; target: number }>>, minPopulation: number): any {
+  private static findBestSplit(bins: Array<Array<{ feature: number; target: number }>>, minPopulation: number): { binIndex: number; splitPoint: number } | null {
     // Simplified split finding logic
     for (let i = 0; i < bins.length; i++) {
       if (bins[i].length >= minPopulation * 2) {
@@ -399,7 +394,7 @@ export class ClientSideBinningEngine {
     return null
   }
 
-  private static applySplit(bins: Array<Array<{ feature: number; target: number }>>, split: any): Array<Array<{ feature: number; target: number }>> {
+  private static applySplit(bins: Array<Array<{ feature: number; target: number }>>, split: { binIndex: number; splitPoint: number }): Array<Array<{ feature: number; target: number }>> {
     const newBins = [...bins]
     const binToSplit = newBins[split.binIndex]
     const leftBin = binToSplit.slice(0, split.splitPoint)
@@ -456,7 +451,7 @@ export class ClientSideBinningEngine {
   /**
    * Make API call to backend with timeout
    */
-  private static async callBackendAPI(endpoint: string, options: RequestInit): Promise<any> {
+  private static async callBackendAPI(endpoint: string, options: RequestInit): Promise<unknown> {
     const controller = new AbortController()
     const timeoutId = setTimeout(() => controller.abort(), this.API_TIMEOUT)
 
