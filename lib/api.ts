@@ -1,7 +1,58 @@
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ||
   (process.env.NODE_ENV === 'production'
     ? 'https://capprossbins-server.onrender.com'
     : 'http://localhost:8000')
+
+// Enhanced Error Types
+export interface APIError extends Error {
+  statusCode?: number
+  retryable?: boolean
+  suggestedAction?: string
+  type?: 'NETWORK' | 'SERVER' | 'TIMEOUT' | 'SIZE_LIMIT' | 'GATEWAY' | 'AUTH' | 'UNKNOWN'
+}
+
+export class APIErrorHandler {
+  static createError(message: string, statusCode?: number, response?: Response): APIError {
+    const error = new Error(message) as APIError
+    error.statusCode = statusCode
+
+    // Analyze error type and provide suggestions
+    if (statusCode === 502) {
+      error.type = 'GATEWAY'
+      error.retryable = true
+      error.suggestedAction = 'Server temporarily unavailable. The service may be starting up or overloaded. Try again in 30-60 seconds.'
+    } else if (statusCode === 504) {
+      error.type = 'TIMEOUT'  
+      error.retryable = true
+      error.suggestedAction = 'Request timed out. Try with a smaller file or retry later.'
+    } else if (statusCode === 413) {
+      error.type = 'SIZE_LIMIT'
+      error.retryable = false
+      error.suggestedAction = 'File too large. Reduce file size to under 50MB.'
+    } else if (statusCode === 429) {
+      error.type = 'SERVER'
+      error.retryable = true
+      error.suggestedAction = 'Too many requests. Wait a moment before trying again.'
+    } else if (statusCode && statusCode >= 500) {
+      error.type = 'SERVER'
+      error.retryable = true
+      error.suggestedAction = 'Server error. Try again in a few minutes.'
+    } else if (statusCode === 401 || statusCode === 403) {
+      error.type = 'AUTH'
+      error.retryable = false
+      error.suggestedAction = 'Authentication required. Please log in again.'
+    } else if (!statusCode || message.includes('fetch')) {
+      error.type = 'NETWORK'
+      error.retryable = true
+      error.suggestedAction = 'Network error. Check your internet connection.'
+    } else {
+      error.type = 'UNKNOWN'
+      error.retryable = true
+    }
+
+    return error
+  }
+}
 
 // Authentication Types
 export interface LoginRequest {
@@ -130,20 +181,42 @@ class CapprossBinsAPIClass {
       ? { 'Content-Type': 'application/json' }
       : this.getAuthHeaders()
 
-    const response = await fetch(url, {
-      headers: {
-        ...defaultHeaders,
-        ...options.headers,
-      },
-      ...options,
-    })
+    try {
+      const response = await fetch(url, {
+        headers: {
+          ...defaultHeaders,
+          ...options.headers,
+        },
+        ...options,
+      })
 
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({ error: 'Network error' }))
-      throw new Error(errorData.detail || errorData.error || `HTTP ${response.status}`)
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ 
+          error: response.status === 502 
+            ? 'Server temporarily unavailable (502 Bad Gateway)' 
+            : 'Network error' 
+        }))
+        
+        const errorMessage = errorData.detail || errorData.error || `HTTP ${response.status}`
+        throw APIErrorHandler.createError(errorMessage, response.status, response)
+      }
+
+      return response.json()
+    } catch (error) {
+      if (error instanceof TypeError && error.message.includes('fetch')) {
+        // Network connectivity issues
+        throw APIErrorHandler.createError('Network connection failed. Check your internet connection.', undefined)
+      }
+      
+      // Re-throw APIError instances
+      if ((error as APIError).type) {
+        throw error
+      }
+      
+      // Handle other errors
+      const message = error instanceof Error ? error.message : 'Unknown error occurred'
+      throw APIErrorHandler.createError(message)
     }
-
-    return response.json()
   }
 
   // Authentication endpoints
@@ -216,26 +289,129 @@ class CapprossBinsAPIClass {
   }
 
   // Data upload and analysis endpoints
+  // Simple upload method with retry logic for 502 errors
   async uploadData(file: File): Promise<DataUploadResponse> {
-    const formData = new FormData()
-    formData.append('file', file)
+    return this.uploadDataWithRetry(file, 3) // 3 attempts for 502 errors
+  }
 
-    const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null
+  // Upload with automatic retry for 502 errors
+  async uploadDataWithRetry(
+    file: File, 
+    maxRetries: number = 3,
+    onProgress?: (progress: number) => void
+  ): Promise<DataUploadResponse> {
+    let lastError: Error | undefined
 
-    const response = await fetch(`${API_BASE_URL}/api/binning/upload-data`, {
-      method: 'POST',
-      headers: {
-        ...(token && { 'Authorization': `Bearer ${token}` })
-      },
-      body: formData,
-    })
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        console.log(`🚀 Upload attempt ${attempt}/${maxRetries} for file: ${file.name}`)
+        
+        const result = await this.uploadDataWithProgress(file, onProgress)
+        console.log('✅ Upload successful!')
+        return result
+        
+      } catch (error) {
+        lastError = error as Error
+        const apiError = error as APIError
+        
+        // Only retry for 502 (Bad Gateway) errors or network issues
+        const isRetryable = apiError.statusCode === 502 || 
+                           apiError.type === 'NETWORK' || 
+                           apiError.type === 'GATEWAY' ||
+                           (apiError.statusCode === undefined && apiError.message?.includes('fetch'))
 
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({ error: 'Upload failed' }))
-      throw new Error(errorData.detail || errorData.error || 'Upload failed')
+        console.log(`❌ Upload attempt ${attempt} failed:`, lastError.message)
+        
+        if (!isRetryable || attempt === maxRetries) {
+          console.log('🚫 Error not retryable or max attempts reached')
+          break
+        }
+
+        // Wait before retry (exponential backoff)
+        const waitTime = Math.min(1000 * Math.pow(2, attempt - 1), 30000) // Cap at 30 seconds
+        console.log(`⏳ Waiting ${waitTime / 1000} seconds before retry...`)
+        await new Promise(resolve => setTimeout(resolve, waitTime))
+      }
     }
 
-    return response.json()
+    // If we get here, all attempts failed
+    throw lastError || new Error('Upload failed after multiple attempts')
+  }
+
+  // Enhanced upload with progress tracking
+  async uploadDataWithProgress(
+    file: File,
+    onProgress?: (progress: number) => void,
+    timeoutMs: number = 300000 // 5 minutes
+  ): Promise<DataUploadResponse> {
+    return new Promise((resolve, reject) => {
+      const xhr = new XMLHttpRequest()
+      const formData = new FormData()
+      formData.append('file', file)
+
+      const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null
+
+      // Set timeout
+      xhr.timeout = timeoutMs
+
+      // Handle progress
+      if (onProgress) {
+        xhr.upload.addEventListener('progress', (e) => {
+          if (e.lengthComputable) {
+            const percentComplete = (e.loaded / e.total) * 100
+            onProgress(Math.round(percentComplete))
+          }
+        })
+      }
+
+      // Handle completion
+      xhr.addEventListener('load', () => {
+        if (xhr.status >= 200 && xhr.status < 300) {
+          try {
+            const response = JSON.parse(xhr.responseText)
+            resolve(response)
+          } catch {
+            reject(APIErrorHandler.createError('Invalid response format', xhr.status))
+          }
+        } else {
+          try {
+            const errorData = JSON.parse(xhr.responseText)
+            const message = errorData.detail || errorData.error || `Upload failed: HTTP ${xhr.status}`
+            reject(APIErrorHandler.createError(message, xhr.status))
+          } catch {
+            let message = `Upload failed: HTTP ${xhr.status}`
+            if (xhr.status === 502) {
+              message = 'Server temporarily unavailable (502 Bad Gateway). The server may be starting up or overloaded.'
+            } else if (xhr.status === 504) {
+              message = 'Upload timed out (504 Gateway Timeout). Try with a smaller file.'
+            }
+            reject(APIErrorHandler.createError(message, xhr.status))
+          }
+        }
+      })
+
+      // Handle errors
+      xhr.addEventListener('error', () => {
+        reject(APIErrorHandler.createError('Network error: Please check your connection and try again'))
+      })
+
+      xhr.addEventListener('timeout', () => {
+        reject(APIErrorHandler.createError(`Upload timeout: File upload took longer than ${timeoutMs / 1000} seconds`, 504))
+      })
+
+      xhr.addEventListener('abort', () => {
+        reject(APIErrorHandler.createError('Upload was cancelled'))
+      })
+
+      // Open and send request
+      xhr.open('POST', `${API_BASE_URL}/api/binning/upload-data`)
+      
+      if (token) {
+        xhr.setRequestHeader('Authorization', `Bearer ${token}`)
+      }
+
+      xhr.send(formData)
+    })
   }
 
   async createAnalysis(analysisData: {
