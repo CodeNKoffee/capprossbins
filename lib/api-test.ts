@@ -23,10 +23,10 @@ export class APIConnectionTester {
   static async testConnection(): Promise<ConnectionTestResult> {
     const startTime = Date.now()
     const testUrl = `${API_BASE_URL}/api/health`
-    
+
     try {
       console.log(`🔍 Testing connection to: ${testUrl}`)
-      
+
       const response = await fetch(testUrl, {
         method: 'GET',
         headers: {
@@ -48,9 +48,9 @@ export class APIConnectionTester {
       }
 
       const data: HealthCheckResponse = await response.json()
-      
+
       console.log('✅ Backend connection successful:', data)
-      
+
       return {
         success: true,
         url: testUrl,
@@ -61,9 +61,9 @@ export class APIConnectionTester {
     } catch (error) {
       const responseTime = Date.now() - startTime
       const errorMessage = error instanceof Error ? error.message : 'Unknown error'
-      
+
       console.error('❌ Backend connection failed:', errorMessage)
-      
+
       return {
         success: false,
         url: testUrl,
@@ -119,20 +119,20 @@ export class APIConnectionTester {
 
   static displayResults(results: Record<string, ConnectionTestResult>): void {
     console.group('🔍 CapprossBins API Connection Test Results')
-    
+
     Object.entries(results).forEach(([name, result]) => {
       const status = result.success ? '✅' : '❌'
       const time = result.responseTime ? `${result.responseTime}ms` : 'N/A'
-      
+
       console.log(`${status} ${name.toUpperCase()}: ${result.url} (${time})`)
-      
+
       if (result.success && result.response) {
         console.log('  Response:', result.response)
       } else if (result.error) {
         console.error('  Error:', result.error)
       }
     })
-    
+
     console.groupEnd()
   }
 }
@@ -147,8 +147,8 @@ if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
   setTimeout(async () => {
     const results = await testAllEndpoints()
     APIConnectionTester.displayResults(results)
-    
-    // Store results globally for debugging
-    ;(window as typeof window & { capprossBinsConnectionTest?: Record<string, ConnectionTestResult> }).capprossBinsConnectionTest = results
+
+      // Store results globally for debugging
+      ; (window as typeof window & { capprossBinsConnectionTest?: Record<string, ConnectionTestResult> }).capprossBinsConnectionTest = results
   }, 1000)
 }
